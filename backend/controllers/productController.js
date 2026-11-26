@@ -1,4 +1,5 @@
 import { sql } from "../config/db.js";
+import { validateProductDto } from "../dto/productDto.js";
 
 export const getProducts = async (req, res) => {
     try {
@@ -16,11 +17,17 @@ export const getProducts = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-    const { name, image, price } = req.body;
+    const parsed = validateProductDto(req.body);
 
-    if (!name || !price || !image) {
-        return res.status(400).json({ success: false, message: "Please provide name, image and price" });
+    if (!parsed.success) {
+        return res.status(400).json({
+            success: false,
+            message: parsed.error.issues[0].message,
+            errors: parsed.error.issues,
+        });
     }
+
+    const { name, image, price } = parsed.data;
 
     try {
         const newProduct = await sql`
@@ -53,7 +60,17 @@ export const getProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { name, image, price } = req.body;
+    const parsed = validateProductDto(req.body);
+
+    if (!parsed.success) {
+        return res.status(400).json({
+            success: false,
+            message: parsed.error.issues[0].message,
+            errors: parsed.error.issues,
+        });
+    }
+
+    const { name, image, price } = parsed.data;
 
     try {
         const updateProduct = await sql`
